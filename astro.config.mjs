@@ -36,22 +36,33 @@ import { remarkFixGithubAdmonitions } from "./src/plugins/remark-fix-github-admo
 import { remarkMermaid } from "./src/plugins/remark-mermaid.js";
 
 // https://astro.build/config
-export default defineConfig({
+
+// 根据环境动态构建配置
+// 用户要求：本地构建不要使用cloudflare的构建器
+// 因此我们强制本地使用静态模式，Cloudflare Pages上使用服务器模式
+// 检查是否在Cloudflare Pages构建环境中
+// Cloudflare Pages会设置CF_PAGES=1，我们只检查这个环境变量
+const isCloudflarePages = process.env.CF_PAGES === "1";
+
+const config = {
 	site: siteConfig.siteURL,
 	base: "/",
 	trailingSlash: "ignore",
 
 	// 根据部署环境选择输出模式
 	// 在Cloudflare Pages上使用服务器端渲染，本地开发使用静态站点
-	output: process.env.CF_PAGES === "1" ? "server" : "static",
+	output: isCloudflarePages ? "server" : "static",
 	
 	// 仅在Cloudflare Pages上使用适配器
-	adapter: process.env.CF_PAGES === "1" ? cloudflare({
-		imageService: "cloudflare",
-		platformProxy: {
-			enabled: true
-		}
-	}) : undefined,
+	// 注意：在非Cloudflare环境中不设置adapter字段，而不是设置为undefined
+	...(isCloudflarePages && {
+		adapter: cloudflare({
+			imageService: "cloudflare",
+			platformProxy: {
+				enabled: true
+			}
+		})
+	}),
 
 	integrations: [
 		oddmisc({
@@ -260,4 +271,6 @@ export default defineConfig({
 					: [],
 		},
 	},
-});
+};
+
+export default defineConfig(config);

@@ -1,18 +1,16 @@
 name = "mizuki"
-main = "src/pages/api/_entry.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 [env.production]
 vars = { ENVIRONMENT = "production" }
 
-# KV命名空间配置（可选）
+# KV命名空间配置（可选）- 用于Cloudflare Pages Functions
 [[kv_namespaces]]
 binding = "PAN123_CACHE"
 id = "JiuYue"
 preview_id = "JiuYue"
 
 # 部署到Cloudflare Pages
-[pages]
-bucket = "./dist"
-pages_build_output_dir = "./dist"
+# 注意：Cloudflare Pages会自动检测pages配置
+# pages_build_output_dir = "./dist"

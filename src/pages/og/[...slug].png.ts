@@ -19,10 +19,12 @@ interface FontOptions {
 	style?: FontStyle;
 	lang?: string;
 }
-export const prerender = true;
+// 在Cloudflare Pages环境中禁用预渲染，避免sharp依赖问题
+export const prerender = import.meta.env.CF_PAGES !== "1";
 
 export const getStaticPaths: GetStaticPaths = async () => {
-	if (!siteConfig.generateOgImages) {
+	// 在Cloudflare Pages环境中禁用OG图片生成，避免sharp依赖问题
+	if (!siteConfig.generateOgImages || import.meta.env.CF_PAGES === "1") {
 		return [];
 	}
 
