@@ -54,3 +54,6 @@ src/data/bilibili-data.json
 
 # Lighthouse CI
 .lighthouseci/
+
+# Wrangler development cache
+.wrangler/
