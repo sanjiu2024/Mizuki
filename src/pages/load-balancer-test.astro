@@ -1,0 +1,131 @@
+---
+import { LoadBalancerStatus } from '../components/features/load-balancer';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="负载均衡器测试" description="负载均衡器系统测试页面">
+  <div class="container mx-auto px-4 py-8">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold mb-2">负载均衡器测试</h1>
+      <p class="text-gray-600 dark:text-gray-400">
+        本页面展示负载均衡器系统的实时状态，包括三条线路的测速结果和当前选择的线路。
+      </p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 class="text-xl font-bold mb-4">线路状态</h2>
+          <LoadBalancerStatus showDetails={true} autoRefresh={true} />
+        </div>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-xl font-bold mb-4">使用说明</h2>
+        <div class="space-y-4">
+          <div>
+            <h3 class="font-semibold mb-2">三条线路</h3>
+            <ul class="list-disc pl-5 space-y-1 text-sm">
+              <li><span class="font-medium">Cloudflare默认线路</span>：自动检测</li>
+              <li><span class="font-medium">Cloudflare优选线路</span>：youxuan.cf.090227.xyz</li>
+              <li><span class="font-medium">香港服务器线路</span>：需配置环境变量</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="font-semibold mb-2">配置方法</h3>
+            <p class="text-sm mb-2">在 <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">.env</code> 文件中添加：</p>
+            <pre class="bg-gray-100 dark:bg-gray-700 p-3 rounded text-xs overflow-x-auto">
+PUBLIC_HK_SERVER_URL=https://your-hk-server.com
+PUBLIC_CF_OPTIMIZED_URL=https://youxuan.cf.090227.xyz</pre>
+          </div>
+          
+          <div>
+            <h3 class="font-semibold mb-2">NAT转发方案</h3>
+            <p class="text-sm">
+              如果香港服务器在NAT后，请参考
+              <a href="/docs/load-balancer-config" class="text-blue-600 dark:text-blue-400 hover:underline">
+                配置文档
+              </a>
+              选择合适方案。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <h2 class="text-xl font-bold mb-4">NAT转发配置方案</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="border border-gray-200 dark:border-gray-700 rounded p-4">
+          <h3 class="font-bold mb-2 text-green-600">方案一：端口映射</h3>
+          <p class="text-sm mb-2">如果路由器有公网IP且支持端口映射：</p>
+          <ul class="list-disc pl-5 text-sm space-y-1">
+            <li>登录路由器管理界面</li>
+            <li>配置80/443端口转发</li>
+            <li>设置DDNS（如果IP动态）</li>
+            <li>性能最好，延迟最低</li>
+          </ul>
+        </div>
+        
+        <div class="border border-gray-200 dark:border-gray-700 rounded p-4">
+          <h3 class="font-bold mb-2 text-blue-600">方案二：FRP内网穿透</h3>
+          <p class="text-sm mb-2">需要一台公网VPS作为中转：</p>
+          <ul class="list-disc pl-5 text-sm space-y-1">
+            <li>在VPS安装FRP服务端</li>
+            <li>在香港服务器安装FRP客户端</li>
+            <li>配置Nginx反向代理</li>
+            <li>稳定可靠，中等延迟</li>
+          </ul>
+        </div>
+        
+        <div class="border border-gray-200 dark:border-gray-700 rounded p-4">
+          <h3 class="font-bold mb-2 text-purple-600">方案三：Cloudflare Tunnel</h3>
+          <p class="text-sm mb-2">免费，无需公网服务器：</p>
+          <ul class="list-disc pl-5 text-sm space-y-1">
+            <li>安装Cloudflared客户端</li>
+            <li>创建Cloudflare Tunnel</li>
+            <li>配置域名解析</li>
+            <li>全球加速，延迟较高</li>
+          </ul>
+        </div>
+        
+        <div class="border border-gray-200 dark:border-gray-700 rounded p-4">
+          <h3 class="font-bold mb-2 text-orange-600">方案选择建议</h3>
+          <p class="text-sm mb-2">根据您的网络环境：</p>
+          <ul class="list-disc pl-5 text-sm space-y-1">
+            <li>有公网IP → 端口映射</li>
+            <li>无公网IP，有VPS → FRP</li>
+            <li>无公网IP，无VPS → Cloudflare Tunnel</li>
+            <li>企业网络 → 联系网络管理员</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+        <p class="text-sm">
+          <strong>详细配置指南：</strong> 请查看
+          <a href="/docs/load-balancer-config" class="text-blue-600 dark:text-blue-400 font-medium hover:underline">
+            docs/LOAD_BALANCER_CONFIG.md
+          </a>
+          获取完整的配置步骤和故障排除方法。
+        </p>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .container {
+    max-width: 1200px;
+  }
+  
+  pre {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  }
+  
+  code {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+  }
+</style>

@@ -16,6 +16,13 @@ interface ImportMetaEnv {
   readonly INDEXNOW_KEY: string;
   readonly INDEXNOW_HOST: string;
   readonly BILI_SESSDATA: string;
+  
+  // 负载均衡器配置
+  readonly PUBLIC_HK_SERVER_URL?: string;
+  readonly PUBLIC_CF_OPTIMIZED_URL?: string;
+  readonly PUBLIC_SPEED_TEST_ENDPOINT?: string;
+  readonly PUBLIC_LOAD_BALANCER_CACHE_DURATION?: string;
+  readonly PUBLIC_LOAD_BALANCER_TEST_INTERVAL?: string;
 }
 
 interface ImportMeta {

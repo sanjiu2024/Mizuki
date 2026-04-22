@@ -1,0 +1,316 @@
+---
+/**
+ * 负载均衡器状态显示组件
+ * 显示当前使用的线路和测速结果
+ */
+
+import { createLoadBalancer } from '../../../lib/load-balancer';
+
+// 创建负载均衡器实例
+const balancer = await createLoadBalancer();
+const stats = balancer.getStats();
+const fastestRoute = stats.selectedRoute;
+const allRoutes = stats.allRoutes;
+const testResults = stats.testResults;
+
+// 格式化时间
+const formatTime = (timestamp: number) => {
+  if (!timestamp) return '从未测试';
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('zh-CN', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    second: '2-digit'
+  });
+};
+
+// 格式化延迟
+const formatLatency = (latency?: number) => {
+  if (!latency) return 'N/A';
+  return `${latency}ms`;
+};
+
+// 获取线路状态
+const getRouteStatus = (routeId: string) => {
+  const result = testResults.find((r: any) => r.routeId === routeId);
+  if (!result) return { status: 'unknown', text: '未测试' };
+  return result.success 
+    ? { status: 'success', text: '正常' }
+    : { status: 'error', text: '失败' };
+};
+---
+
+<div class="load-balancer-status">
+  <div class="status-header">
+    <h3>负载均衡状态</h3>
+    <p class="last-test">最后测速: {formatTime(stats.lastTestTime)}</p>
+  </div>
+  
+  <div class="current-route">
+    <h4>当前线路</h4>
+    {fastestRoute ? (
+      <div class="route-card selected">
+        <div class="route-info">
+          <span class="route-name">{fastestRoute.name}</span>
+          <span class="route-url">{fastestRoute.url}</span>
+        </div>
+        <div class="route-stats">
+          <span class="latency">延迟: {formatLatency(fastestRoute.lastLatency)}</span>
+          {fastestRoute.avgLatency && (
+            <span class="avg-latency">平均: {formatLatency(fastestRoute.avgLatency)}</span>
+          )}
+        </div>
+      </div>
+    ) : (
+      <p class="no-route">没有可用的线路</p>
+    )}
+  </div>
+  
+  <div class="all-routes">
+    <h4>所有线路</h4>
+    <div class="routes-list">
+      {allRoutes.map((route: any) => {
+        const status = getRouteStatus(route.id);
+        const result = testResults.find((r: any) => r.routeId === route.id);
+        const isSelected = fastestRoute?.id === route.id;
+        
+        return (
+          <div class={`route-card ${isSelected ? 'selected' : ''} ${status.status}`}>
+            <div class="route-header">
+              <span class="route-name">{route.name}</span>
+              <span class={`status-badge ${status.status}`}>{status.text}</span>
+            </div>
+            <div class="route-url">{route.url}</div>
+            {result && (
+              <div class="route-stats">
+                <span class="latency">延迟: {formatLatency(result.latency)}</span>
+                {route.avgLatency && (
+                  <span class="avg-latency">平均: {formatLatency(route.avgLatency)}</span>
+                )}
+                {route.successRate !== undefined && (
+                  <span class="success-rate">成功率: {route.successRate}%</span>
+                )}
+              </div>
+            )}
+            <div class="route-priority">优先级: {route.priority}</div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+  
+  <div class="actions">
+    <button 
+      class="test-button"
+      onclick="window.location.reload()"
+    >
+      重新测速
+    </button>
+    <button 
+      class="config-button"
+      onclick="window.open('/docs/LOAD_BALANCER_CONFIG.md', '_blank')"
+    >
+      配置指南
+    </button>
+  </div>
+</div>
+
+<style>
+.load-balancer-status {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  margin: 1rem 0;
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.status-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.last-test {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.current-route,
+.all-routes {
+  margin-bottom: 1.5rem;
+}
+
+.current-route h4,
+.all-routes h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.routes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.route-card {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.route-card.selected {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.route-card.success {
+  border-left: 4px solid #10b981;
+}
+
+.route-card.error {
+  border-left: 4px solid #ef4444;
+}
+
+.route-card.unknown {
+  border-left: 4px solid #6b7280;
+}
+
+.route-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.route-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.status-badge.success {
+  background: #10b98120;
+  color: #10b981;
+}
+
+.status-badge.error {
+  background: #ef444420;
+  color: #ef4444;
+}
+
+.status-badge.unknown {
+  background: #6b728020;
+  color: #6b7280;
+}
+
+.route-url {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  word-break: break-all;
+}
+
+.route-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.route-priority {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.no-route {
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.test-button,
+.config-button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.test-button {
+  background: var(--primary-color);
+  color: white;
+}
+
+.test-button:hover {
+  background: var(--primary-color-dark);
+  transform: translateY(-1px);
+}
+
+.config-button {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.config-button:hover {
+  background: var(--bg-tertiary);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .load-balancer-status {
+    padding: 1rem;
+  }
+  
+  .status-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .route-stats {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+}
+</style>

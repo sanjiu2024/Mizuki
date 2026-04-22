@@ -1,0 +1,222 @@
+---
+import { createLoadBalancer } from '../lib/load-balancer';
+import Layout from '../layouts/Layout.astro';
+
+// 创建负载均衡器并运行测速
+const balancer = await createLoadBalancer();
+await balancer.runSpeedTest();
+
+// 获取测速结果和统计信息
+const stats = balancer.getStats();
+const fastestRoute = stats.selectedRoute;
+const allRoutes = stats.allRoutes;
+const testResults = stats.testResults;
+
+// 格式化时间
+const formatTime = (timestamp: number) => {
+  if (!timestamp) return '从未测试';
+  const date = new Date(timestamp);
+  return date.toLocaleString('zh-CN');
+};
+
+// 格式化延迟
+const formatLatency = (latency?: number) => {
+  if (!latency) return 'N/A';
+  return `${latency}ms`;
+};
+
+// 获取线路状态
+const getRouteStatus = (routeId: string) => {
+  const result = testResults.find((r: any) => r.routeId === routeId);
+  if (!result) return { status: 'unknown', text: '未测试' };
+  return result.success 
+    ? { status: 'success', text: '正常' }
+    : { status: 'error', text: '失败' };
+};
+---
+
+<Layout title="线路测速" description="测试三条线路延迟并自动选择最优线路">
+  <div class="container mx-auto px-4 py-8">
+    <header class="mb-8 text-center">
+      <h1 class="text-3xl font-bold mb-2">线路测速与选择</h1>
+      <p class="text-gray-600 dark:text-gray-400">
+        本页面自动测试三条线路的延迟，并为您选择最优线路。
+        测速完成后，您可以选择使用最优线路或手动选择其他线路。
+      </p>
+    </header>
+
+    <!-- 测速结果 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold">测速结果</h2>
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          最后测速时间: {formatTime(stats.lastTestTime)}
+        </div>
+      </div>
+
+      <!-- 最优线路 -->
+      <div class="mb-6">
+        <h3 class="font-bold mb-3 text-lg">推荐线路</h3>
+        {fastestRoute ? (
+          <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <div class="flex justify-between items-center mb-2">
+              <div>
+                <span class="font-bold text-green-700 dark:text-green-300">{fastestRoute.name}</span>
+                <span class="ml-2 text-sm bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded">最优线路</span>
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">
+                延迟: {formatLatency(fastestRoute.lastLatency)}
+              </div>
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              {fastestRoute.url}
+            </div>
+            <div class="flex gap-2 mt-3">
+              <button 
+                onclick={`window.location.href='${fastestRoute.url}'`}
+                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+              >
+                使用此线路访问
+              </button>
+              <button 
+                onclick="window.location.reload()"
+                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded transition-colors"
+              >
+                重新测速
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <p class="text-yellow-700 dark:text-yellow-300">没有可用的线路，请检查配置或重新测速。</p>
+          </div>
+        )}
+      </div>
+
+      <!-- 所有线路详情 -->
+      <div>
+        <h3 class="font-bold mb-3 text-lg">所有线路详情</h3>
+        <div class="space-y-4">
+          {allRoutes.map((route: any) => {
+            const status = getRouteStatus(route.id);
+            const result = testResults.find((r: any) => r.routeId === route.id);
+            const isFastest = fastestRoute?.id === route.id;
+            
+            return (
+              <div class={`border rounded-lg p-4 ${isFastest ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/10' : 'border-gray-200 dark:border-gray-700'}`}>
+                <div class="flex justify-between items-center mb-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">{route.name}</span>
+                    {isFastest && (
+                      <span class="text-xs bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded">当前最优</span>
+                    )}
+                    <span class={`text-xs px-2 py-1 rounded ${status.status === 'success' ? 'bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200' : status.status === 'error' ? 'bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'}`}>
+                      {status.text}
+                    </span>
+                  </div>
+                  <div class="text-sm font-medium">
+                    优先级: {route.priority}
+                  </div>
+                </div>
+                
+                <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  {route.url}
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                  <div class="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                    <div class="text-gray-500 dark:text-gray-400">最后延迟</div>
+                    <div class="font-medium">{formatLatency(route.lastLatency)}</div>
+                  </div>
+                  {route.avgLatency && (
+                    <div class="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                      <div class="text-gray-500 dark:text-gray-400">平均延迟</div>
+                      <div class="font-medium">{formatLatency(route.avgLatency)}</div>
+                    </div>
+                  )}
+                  {route.successRate !== undefined && (
+                    <div class="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                      <div class="text-gray-500 dark:text-gray-400">成功率</div>
+                      <div class="font-medium">{route.successRate}%</div>
+                    </div>
+                  )}
+                  <div class="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                    <div class="text-gray-500 dark:text-gray-400">状态</div>
+                    <div class="font-medium">{route.enabled ? '启用' : '禁用'}</div>
+                  </div>
+                </div>
+                
+                {result && !result.success && result.error && (
+                  <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+                    错误: {result.error}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+
+    <!-- 配置信息 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <h2 class="text-xl font-bold mb-4">配置信息</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <h3 class="font-bold mb-2">当前配置</h3>
+          <ul class="space-y-2 text-sm">
+            <li class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">香港服务器:</span>
+              <span class="font-medium">www.hscraft.online:10222 (HTTPS)</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Cloudflare优选:</span>
+              <span class="font-medium">youxuan.cf.090227.xyz</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">测速端点:</span>
+              <span class="font-medium">{import.meta.env.PUBLIC_SPEED_TEST_ENDPOINT || '/favicon.ico'}</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">测速间隔:</span>
+              <span class="font-medium">5分钟</span>
+            </li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="font-bold mb-2">使用说明</h3>
+          <ul class="space-y-2 text-sm">
+            <li>1. 页面加载时自动测速</li>
+            <li>2. 系统自动选择延迟最低的线路</li>
+            <li>3. 点击"使用此线路访问"跳转到最优线路</li>
+            <li>4. 点击"重新测速"更新测速结果</li>
+            <li>5. 所有线路详情显示延迟和状态</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+        <p class="text-sm">
+          <strong>注意：</strong> 香港服务器使用非标准端口，HTTP端口为10115，HTTPS端口为10222。
+          负载均衡器使用HTTPS端口10222进行测速。如果线路无法访问，请检查服务器配置和防火墙设置。
+        </p>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .container {
+    max-width: 1200px;
+  }
+  
+  button {
+    cursor: pointer;
+  }
+  
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+</style>
