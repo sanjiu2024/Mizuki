@@ -18,9 +18,6 @@ import remarkDirective from "remark-directive";
 import remarkMath from "remark-math";
 import remarkSectionize from "remark-sectionize";
 
-// Cloudflare适配器（仅在部署到Cloudflare时使用）
-import cloudflare from "@astrojs/cloudflare";
-
 import { siteConfig } from "./src/config.ts";
 import { pluginCustomCopyButton } from "./src/plugins/expressive-code/custom-copy-button.js";
 import { pluginLanguageBadge } from "./src/plugins/expressive-code/language-badge.ts";
@@ -37,32 +34,15 @@ import { remarkMermaid } from "./src/plugins/remark-mermaid.js";
 
 // https://astro.build/config
 
-// 根据环境动态构建配置
-// 用户要求：本地构建不要使用cloudflare的构建器
-// 因此我们强制本地使用静态模式，Cloudflare Pages上使用服务器模式
-// 检查是否在Cloudflare Pages构建环境中
-// Cloudflare Pages会设置CF_PAGES=1，我们只检查这个环境变量
-const isCloudflarePages = process.env.CF_PAGES === "1";
-
+// 配置
+// 用户要求：不使用cloudflare的构建器，始终使用静态构建
 const config = {
 	site: siteConfig.siteURL,
 	base: "/",
 	trailingSlash: "ignore",
 
-	// 根据部署环境选择输出模式
-	// 在Cloudflare Pages上使用服务器端渲染，本地开发使用静态站点
-	output: isCloudflarePages ? "server" : "static",
-	
-	// 仅在Cloudflare Pages上使用适配器
-	// 注意：在非Cloudflare环境中不设置adapter字段，而不是设置为undefined
-	...(isCloudflarePages && {
-		adapter: cloudflare({
-			imageService: "cloudflare",
-			platformProxy: {
-				enabled: true
-			}
-		})
-	}),
+	// 始终使用静态输出模式
+	output: "static",
 
 	integrations: [
 		oddmisc({
