@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 
-// 标记为服务器端渲染，避免静态构建
-export const prerender = false;
+// 条件预渲染：在Cloudflare Pages上使用服务器端渲染，本地构建时预渲染为静态占位符
+export const prerender = import.meta.env.CF_PAGES !== "1";
 
 // 下载统计辅助函数
 async function incrementDownloadCount(filePath: string): Promise<void> {
@@ -74,6 +74,33 @@ export const HEAD: APIRoute = async ({ request, url }) => {
 
 async function handleDownload(request: Request, url: URL, method: string) {
   try {
+    // 检查是否在Cloudflare Pages环境
+    // 如果不在Cloudflare上，返回静态占位符响应（用于本地构建）
+    if (import.meta.env.CF_PAGES !== "1") {
+      console.log('[PAN123-DOWNLOAD] 非Cloudflare环境，返回静态占位符响应');
+      if (method === 'HEAD') {
+        return new Response(null, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="%E7%94%B5%E8%84%91.zip"',
+            'Content-Length': '10884414382',
+            'X-Environment': 'static-build',
+          },
+        });
+      } else {
+        return new Response('这是123网盘文件的静态占位符内容。实际部署到Cloudflare Pages后，此端点将代理下载真实文件。', {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="%E7%94%B5%E8%84%91.zip"',
+            'Content-Length': '10884414382',
+            'X-Environment': 'static-build',
+          },
+        });
+      }
+    }
+    
     // 提取文件路径
     const filePath = extractFilePath(request, url);
     

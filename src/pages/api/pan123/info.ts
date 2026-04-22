@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import { createPan123Client } from '../../lib/pan123-webdav';
 
-// 标记为服务器端渲染，避免静态构建
-export const prerender = false;
+// 条件预渲染：在Cloudflare Pages上使用服务器端渲染，本地构建时预渲染为静态占位符
+export const prerender = import.meta.env.CF_PAGES !== "1";
 
 export interface FileInfoResponse {
   path: string;
@@ -213,6 +213,25 @@ export const POST: APIRoute = async ({ request, url }) => {
 
 async function handleRequest(request: Request, url: URL, method: string) {
   try {
+    // 检查是否在Cloudflare Pages环境
+    // 如果不在Cloudflare上，返回静态占位符数据（用于本地构建）
+    if (import.meta.env.CF_PAGES !== "1") {
+      console.log('[PAN123-INFO] 非Cloudflare环境，返回静态占位符数据');
+      const placeholderData = {
+        path: "/电脑.zip",
+        name: "电脑.zip",
+        size: 10884414382,
+        lastModified: "2026-04-22T18:34:42.917Z",
+        isDirectory: false,
+        mimeType: "text/plain; charset=utf-8",
+        downloadUrl: "/api/pan123/download?path=%2F%E7%94%B5%E8%84%91.zip"
+      };
+      return new Response(JSON.stringify(placeholderData), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'X-Environment': 'static-build' },
+      });
+    }
+    
     let filePath = '/';
     const listDirectory = url.searchParams.get('list') === 'true';
     

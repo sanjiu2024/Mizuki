@@ -1,5 +1,8 @@
 import { getSortedPosts } from "../../utils/content-utils";
 
+// 此API端点可预渲染为静态JSON文件
+export const prerender = true;
+
 export async function GET() {
 	const posts = await getSortedPosts();
 

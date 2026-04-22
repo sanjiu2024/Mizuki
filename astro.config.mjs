@@ -18,6 +18,9 @@ import remarkDirective from "remark-directive";
 import remarkMath from "remark-math";
 import remarkSectionize from "remark-sectionize";
 
+// Cloudflare适配器（仅在部署到Cloudflare时使用）
+import cloudflare from "@astrojs/cloudflare";
+
 import { siteConfig } from "./src/config.ts";
 import { pluginCustomCopyButton } from "./src/plugins/expressive-code/custom-copy-button.js";
 import { pluginLanguageBadge } from "./src/plugins/expressive-code/language-badge.ts";
@@ -38,7 +41,17 @@ export default defineConfig({
 	base: "/",
 	trailingSlash: "ignore",
 
-	output: "static",
+	// 根据部署环境选择输出模式
+	// 在Cloudflare Pages上使用服务器端渲染，本地开发使用静态站点
+	output: process.env.CF_PAGES === "1" ? "server" : "static",
+	
+	// 仅在Cloudflare Pages上使用适配器
+	adapter: process.env.CF_PAGES === "1" ? cloudflare({
+		imageService: "cloudflare",
+		platformProxy: {
+			enabled: true
+		}
+	}) : undefined,
 
 	integrations: [
 		oddmisc({

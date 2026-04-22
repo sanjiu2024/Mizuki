@@ -9,9 +9,10 @@ vars = { ENVIRONMENT = "production" }
 # KV命名空间配置（可选）
 [[kv_namespaces]]
 binding = "PAN123_CACHE"
-id = "pan123_cache"
-preview_id = "pan123_cache"
+id = "JiuYue"
+preview_id = "JiuYue"
 
 # 部署到Cloudflare Pages
 [pages]
 bucket = "./dist"
+pages_build_output_dir = "./dist"
