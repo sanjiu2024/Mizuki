@@ -31,7 +31,7 @@ export function Pan123FileComponent(properties, children) {
   const icon = properties.icon || "material-symbols:download";
   const cardUuid = `P123${Math.random().toString(36).slice(-6)}`; // 避免冲突
 
-  // 构建API URL
+  // 构建API URL（使用查询参数）
   const apiUrl = `/api/pan123/info?path=${encodeURIComponent(filePath)}`;
   const downloadUrl = `/api/pan123/download?path=${encodeURIComponent(filePath)}`;
 
@@ -81,17 +81,72 @@ export function Pan123FileComponent(properties, children) {
     { type: "text/javascript", defer: true },
     `
     (function() {
-      const apiUrl = '${apiUrl}';
       const cardId = '${cardUuid}';
       const filePath = '${filePath}';
       
-      fetch(apiUrl, { referrerPolicy: "no-referrer" })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('HTTP error ' + response.status);
+      // 混合请求函数：先尝试POST，再尝试GET
+      async function fetchFileInfo(path) {
+        // 方法1：尝试POST请求（推荐）
+        try {
+          console.log('[PAN123-FILE] 尝试POST请求获取文件信息:', path);
+          const response = await fetch('/api/pan123/info', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ path }),
+            referrerPolicy: "no-referrer"
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[PAN123-FILE] POST请求成功:', data);
+            return data;
           }
-          return response.json();
-        })
+          console.warn('[PAN123-FILE] POST请求失败，状态码:', response.status);
+        } catch (error) {
+          console.warn('[PAN123-FILE] POST请求异常:', error);
+        }
+        
+        // 方法2：尝试GET请求（查询参数）
+        try {
+          console.log('[PAN123-FILE] 尝试GET请求获取文件信息:', path);
+          const apiUrl = '/api/pan123/info?path=' + encodeURIComponent(path);
+          const response = await fetch(apiUrl, { referrerPolicy: "no-referrer" });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[PAN123-FILE] GET请求成功:', data);
+            return data;
+          }
+          console.warn('[PAN123-FILE] GET请求失败，状态码:', response.status);
+        } catch (error) {
+          console.warn('[PAN123-FILE] GET请求异常:', error);
+        }
+        
+        // 方法3：尝试路径参数方式
+        try {
+          console.log('[PAN123-FILE] 尝试路径参数方式获取文件信息:', path);
+          // 移除开头的斜杠
+          const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+          const apiUrl = '/api/pan123/info/' + encodeURIComponent(cleanPath);
+          const response = await fetch(apiUrl, { referrerPolicy: "no-referrer" });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[PAN123-FILE] 路径参数请求成功:', data);
+            return data;
+          }
+          console.warn('[PAN123-FILE] 路径参数请求失败，状态码:', response.status);
+        } catch (error) {
+          console.warn('[PAN123-FILE] 路径参数请求异常:', error);
+        }
+        
+        throw new Error('所有请求方式都失败了');
+      }
+      
+      // 获取文件信息
+      fetchFileInfo(filePath)
         .then(data => {
           // 更新文件大小
           const sizeEl = document.getElementById(cardId + '-size');
@@ -198,6 +253,7 @@ export function Pan123LinkComponent(properties, children) {
 
   const filePath = properties.path;
   const displayName = properties.name || filePath.split('/').pop() || filePath;
+  
   const downloadUrl = `/api/pan123/download?path=${encodeURIComponent(filePath)}`;
   const linkUuid = `P123L${Math.random().toString(36).slice(-6)}`;
 
@@ -225,6 +281,8 @@ export function Pan123LinkComponent(properties, children) {
     `
     (function() {
       const filePath = '${filePath}';
+      
+      // 使用查询参数方式
       const apiUrl = '/api/pan123/info?path=' + encodeURIComponent(filePath);
       const linkEl = document.querySelector('a[data-path="' + filePath + '"]');
       

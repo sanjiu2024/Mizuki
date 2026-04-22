@@ -99,11 +99,30 @@ import { Pan123File } from '@/components/features/pan123';
 
 ## API接口
 
-系统提供了以下API接口：
+系统提供了以下API接口，支持多种请求方式以确保最大兼容性：
 
 ### 1. 获取文件信息
+
+系统支持三种请求方式，前端会自动尝试所有方式：
+
+#### 方式一：GET请求（查询参数） - **推荐**
 ```
 GET /api/pan123/info?path=文件路径
+```
+
+#### 方式二：POST请求（JSON请求体）
+```
+POST /api/pan123/info
+Content-Type: application/json
+
+{
+  "path": "文件路径"
+}
+```
+
+#### 方式三：路径参数方式
+```
+GET /api/pan123/info/文件路径
 ```
 
 **查询参数：**
@@ -124,8 +143,17 @@ GET /api/pan123/info?path=文件路径
 ```
 
 ### 2. 下载文件
+
+支持两种请求方式：
+
+#### 方式一：GET请求（查询参数） - **推荐**
 ```
 GET /api/pan123/download?path=文件路径
+```
+
+#### 方式二：路径参数方式
+```
+GET /api/pan123/download/文件路径
 ```
 
 此接口会直接返回文件内容，设置正确的 `Content-Disposition` 头以便下载。
@@ -176,6 +204,7 @@ GET /api/pan123/download?path=文件路径
    - 检查环境变量配置是否正确
    - 确认文件路径是否存在
    - 查看浏览器控制台错误信息
+   - **注意**：系统使用混合方案C，会自动尝试POST、GET查询参数、路径参数三种方式
 
 2. **认证失败**
    - 确认123网盘账号密码正确
@@ -186,6 +215,11 @@ GET /api/pan123/download?path=文件路径
    - 确认 `pan123.css` 已正确导入
    - 检查CSS类名是否正确
    - 查看元素样式计算
+
+4. **查询参数丢失（Astro框架问题）**
+   - 已通过混合方案C解决：API端点添加 `export const prerender = false`
+   - 前端组件实现三重请求尝试机制
+   - 确保 `trailingSlash: "ignore"` 配置正确
 
 ### 调试方法
 

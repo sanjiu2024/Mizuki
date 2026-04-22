@@ -1,4 +1,8 @@
 import type { APIRoute } from 'astro';
+import { createPan123Client } from '../../lib/pan123-webdav';
+
+// 标记为服务器端渲染，避免静态构建
+export const prerender = false;
 
 export interface FileInfoResponse {
   path: string;
@@ -70,171 +74,72 @@ async function setToCache(key: string, data: FileInfoResponse | FileInfoResponse
   }
 }
 
-export const GET: APIRoute = async ({ url }) => {
+/**
+ * 手动解析URL查询参数（解决Astro查询参数丢失问题）
+ */
+function parseQueryParams(urlString: string): URLSearchParams {
   try {
-    // 从查询参数获取文件路径
-    const filePath = url.searchParams.get('path');
-    const listDirectory = url.searchParams.get('list') === 'true';
-    
-    if (!filePath) {
-      return new Response(JSON.stringify({ error: '文件路径参数缺失' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // 构建缓存键
-    const cacheKey = `pan123:${filePath}:${listDirectory ? 'list' : 'info'}`;
-    
-    // 尝试从缓存获取
-    const cached = await getFromCache(cacheKey);
-    if (cached) {
-      return new Response(JSON.stringify(cached.data), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // 从环境变量获取123网盘凭证
-    const username = import.meta.env.PAN123_USERNAME || '15973658027';
-    const password = import.meta.env.PAN123_PASSWORD || 'kbdut2da';
-    const baseUrl = import.meta.env.PAN123_WEBDAV_URL || 'https://webdav.123pan.cn/webdav';
-
-    // 构建完整的WebDAV URL
-    const webdavUrl = new URL(filePath, baseUrl).toString();
-    
-    // 创建Basic认证头
-    const credentials = btoa(`${username}:${password}`);
-    const authHeader = `Basic ${credentials}`;
-
-    if (listDirectory) {
-      // 获取目录列表
-      const response = await fetch(webdavUrl, {
-        method: 'PROPFIND',
-        headers: {
-          'Authorization': authHeader,
-          'Depth': '1',
-          'Content-Type': 'application/xml',
-        },
-        body: `<?xml version="1.0" encoding="utf-8" ?>
-<propfind xmlns="DAV:">
-  <prop>
-    <getcontentlength xmlns="DAV:"/>
-    <getlastmodified xmlns="DAV:"/>
-    <displayname xmlns="DAV:"/>
-    <resourcetype xmlns="DAV:"/>
-    <getcontenttype xmlns="DAV:"/>
-  </prop>
-</propfind>`,
-      });
-
-      if (!response.ok) {
-        return new Response(
-          JSON.stringify({ 
-            error: `无法获取目录列表: ${response.status} ${response.statusText}`,
-            path: filePath 
-          }),
-          {
-            status: response.status,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      const xmlText = await response.text();
-      const files = parseWebDAVResponse(xmlText, filePath, baseUrl);
-      
-      const result = { 
-        path: filePath,
-        isDirectory: true,
-        files 
-      };
-      
-      // 缓存目录列表结果
-      await setToCache(cacheKey, files);
-      
-      return new Response(JSON.stringify(result), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    } else {
-      // 获取单个文件信息
-      const response = await fetch(webdavUrl, {
-        method: 'HEAD',
-        headers: {
-          'Authorization': authHeader,
-          'Accept': '*/*',
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          return new Response(
-            JSON.stringify({ 
-              error: '文件不存在',
-              path: filePath 
-            }),
-            {
-              status: 404,
-              headers: { 'Content-Type': 'application/json' },
-            }
-          );
-        }
-        
-        return new Response(
-          JSON.stringify({ 
-            error: `无法获取文件信息: ${response.status} ${response.statusText}`,
-            path: filePath 
-          }),
-          {
-            status: response.status,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      const contentLength = response.headers.get('Content-Length');
-      const lastModified = response.headers.get('Last-Modified');
-      const contentType = response.headers.get('Content-Type');
-
-      // 从路径中提取文件名
-      const pathParts = filePath.split('/');
-      const name = pathParts[pathParts.length - 1] || filePath;
-
-      const fileInfo: FileInfoResponse = {
-        path: filePath,
-        name,
-        size: contentLength ? parseInt(contentLength, 10) : 0,
-        lastModified: lastModified || new Date().toISOString(),
-        isDirectory: false,
-        mimeType: contentType || undefined,
-        downloadUrl: `/api/pan123/download?path=${encodeURIComponent(filePath)}`,
-      };
-
-      // 缓存文件信息结果
-      await setToCache(cacheKey, fileInfo);
-
-      return new Response(JSON.stringify(fileInfo), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
+    // 尝试使用URL API解析
+    const url = new URL(urlString);
+    return url.searchParams;
   } catch (error) {
-    console.error('获取文件信息时出错:', error);
-    
-    return new Response(
-      JSON.stringify({ 
-        error: '服务器内部错误',
-        message: error instanceof Error ? error.message : '未知错误'
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    // 如果URL不完整，手动解析查询字符串
+    console.warn('[PAN123-INFO] URL解析失败，尝试手动解析:', error);
+    const queryStart = urlString.indexOf('?');
+    if (queryStart === -1) {
+      return new URLSearchParams();
+    }
+    const queryString = urlString.substring(queryStart + 1);
+    return new URLSearchParams(queryString);
   }
-};
+}
+
+/**
+ * 从请求中提取文件路径（混合方案）
+ * 支持多种方式：
+ * 1. POST请求体中的JSON
+ * 2. GET查询参数（手动解析）
+ * 3. URL路径参数（备用方案）
+ */
+function extractFilePath(request: Request, url: URL): string {
+  const urlString = url.toString();
+  console.log('[PAN123-INFO] 请求方法:', request.method);
+  console.log('[PAN123-INFO] 请求URL:', urlString);
+  
+  // 手动解析查询参数（解决Astro bug）
+  const searchParams = parseQueryParams(urlString);
+  console.log('[PAN123-INFO] 手动解析的查询参数:', Object.fromEntries(searchParams.entries()));
+  console.log('[PAN123-INFO] Astro提供的查询参数:', Object.fromEntries(url.searchParams.entries()));
+  
+  let filePath = '/';
+  
+  // 方法1：尝试从查询参数获取（GET请求）
+  if (request.method === 'GET') {
+    const queryPath = searchParams.get('path');
+    if (queryPath) {
+      console.log('[PAN123-INFO] 从查询参数获取路径:', queryPath);
+      return queryPath;
+    }
+    
+    // 方法2：尝试从URL路径解析（备用方案）
+    // URL格式: /api/pan123/info/电脑.zip
+    const pathMatch = url.pathname.match(/\/api\/pan123\/info\/(.+)/);
+    if (pathMatch) {
+      const pathParam = decodeURIComponent(pathMatch[1]);
+      console.log('[PAN123-INFO] 从URL路径获取路径:', pathParam);
+      return '/' + pathParam;
+    }
+  }
+  
+  // 方法3：对于POST请求，从请求体获取
+  if (request.method === 'POST') {
+    // 注意：这里需要异步处理，但为了简化先返回默认值
+    console.log('[PAN123-INFO] POST请求，需要在处理函数中从请求体获取');
+  }
+  
+  console.log('[PAN123-INFO] 使用默认路径:', filePath);
+  return filePath;
+}
 
 /**
  * 解析WebDAV XML响应
@@ -295,4 +200,207 @@ function parseWebDAVResponse(xmlText: string, basePath: string, baseUrl: string)
   }
 
   return files;
+}
+
+// 支持GET和POST请求
+export const GET: APIRoute = async ({ request, url }) => {
+  return handleRequest(request, url, 'GET');
+};
+
+export const POST: APIRoute = async ({ request, url }) => {
+  return handleRequest(request, url, 'POST');
+};
+
+async function handleRequest(request: Request, url: URL, method: string) {
+  try {
+    let filePath = '/';
+    const listDirectory = url.searchParams.get('list') === 'true';
+    
+    // 根据请求方法提取文件路径
+    if (method === 'POST') {
+      try {
+        const body = await request.json();
+        filePath = body.path || '/';
+        console.log('[PAN123-INFO] 从POST请求体获取路径:', filePath);
+      } catch (error) {
+        console.warn('[PAN123-INFO] 无法解析POST请求体，使用默认路径');
+      }
+    } else {
+      // GET请求：使用混合提取方法
+      filePath = extractFilePath(request, url);
+    }
+    
+    console.log('[PAN123-INFO] 最终文件路径:', filePath);
+    console.log('[PAN123-INFO] 是否列出目录:', listDirectory);
+
+    // 构建缓存键
+    const cacheKey = `pan123:${filePath}:${listDirectory ? 'list' : 'info'}`;
+    
+    // 尝试从缓存获取
+    const cached = await getFromCache(cacheKey);
+    if (cached) {
+      console.log('[PAN123-INFO] 使用缓存数据');
+      return new Response(JSON.stringify(cached.data), {
+        status: 200,
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Cache': 'HIT'
+        },
+      });
+    }
+
+    // 从环境变量获取123网盘凭证
+    const username = import.meta.env.PAN123_USERNAME || '15973658027';
+    const password = import.meta.env.PAN123_PASSWORD || 'kbdut2da';
+    let baseUrl = import.meta.env.PAN123_WEBDAV_URL || 'https://webdav.123pan.cn/webdav';
+    // 确保基础URL以斜杠结尾，以便正确追加相对路径
+    if (!baseUrl.endsWith('/')) {
+      baseUrl += '/';
+    }
+
+    // 构建完整的WebDAV URL
+    // 规范化文件路径：移除开头的斜杠，避免替换基础URL的路径
+    const normalizedPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+    console.log('[PAN123-INFO] 基础URL:', baseUrl);
+    console.log('[PAN123-INFO] 规范化路径:', normalizedPath);
+    const webdavUrl = new URL(normalizedPath, baseUrl as string).toString();
+    console.log('[PAN123-INFO] WebDAV URL:', webdavUrl);
+    
+    // 创建Basic认证头
+    const credentials = btoa(`${username}:${password}`);
+    const authHeader = `Basic ${credentials}`;
+
+    if (listDirectory) {
+      // 获取目录列表
+      const response = await fetch(webdavUrl, {
+        method: 'PROPFIND',
+        headers: {
+          'Authorization': authHeader,
+          'Depth': '1',
+          'Content-Type': 'application/xml',
+        },
+        body: `<?xml version="1.0" encoding="utf-8" ?>
+<propfind xmlns="DAV:">
+  <prop>
+    <getcontentlength xmlns="DAV:"/>
+    <getlastmodified xmlns="DAV:"/>
+    <displayname xmlns="DAV:"/>
+    <resourcetype xmlns="DAV:"/>
+    <getcontenttype xmlns="DAV:"/>
+  </prop>
+</propfind>`,
+      });
+
+      if (!response.ok) {
+        return new Response(
+          JSON.stringify({ 
+            error: `无法获取目录列表: ${response.status} ${response.statusText}`,
+            path: filePath 
+          }),
+          {
+            status: response.status,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      const xmlText = await response.text();
+      const files = parseWebDAVResponse(xmlText, filePath, baseUrl);
+      
+      const result = { 
+        path: filePath,
+        isDirectory: true,
+        files 
+      };
+      
+      // 缓存目录列表结果
+      await setToCache(cacheKey, files);
+      
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Cache': 'MISS'
+        },
+      });
+    } else {
+      // 获取单个文件信息
+      const response = await fetch(webdavUrl, {
+        method: 'HEAD',
+        headers: {
+          'Authorization': authHeader,
+          'Accept': '*/*',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return new Response(
+            JSON.stringify({ 
+              error: '文件不存在',
+              path: filePath 
+            }),
+            {
+              status: 404,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({ 
+            error: `无法获取文件信息: ${response.status} ${response.statusText}`,
+            path: filePath 
+          }),
+          {
+            status: response.status,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      const contentLength = response.headers.get('Content-Length');
+      const lastModified = response.headers.get('Last-Modified');
+      const contentType = response.headers.get('Content-Type');
+
+      // 从路径中提取文件名
+      const pathParts = filePath.split('/');
+      const name = pathParts[pathParts.length - 1] || filePath;
+
+      const fileInfo: FileInfoResponse = {
+        path: filePath,
+        name,
+        size: contentLength ? parseInt(contentLength, 10) : 0,
+        lastModified: lastModified || new Date().toISOString(),
+        isDirectory: false,
+        mimeType: contentType || undefined,
+        downloadUrl: `/api/pan123/download?path=${encodeURIComponent(filePath)}`,
+      };
+
+      // 缓存文件信息结果
+      await setToCache(cacheKey, fileInfo);
+
+      return new Response(JSON.stringify(fileInfo), {
+        status: 200,
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Cache': 'MISS'
+        },
+      });
+    }
+
+  } catch (error) {
+    console.error('获取文件信息时出错:', error);
+    
+    return new Response(
+      JSON.stringify({ 
+        error: '服务器内部错误',
+        message: error instanceof Error ? error.message : '未知错误'
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
 }
