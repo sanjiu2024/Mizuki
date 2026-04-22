@@ -27,18 +27,11 @@ export const defaultRoutes: Route[] = [
     priority: 1,
   },
   {
-    id: 'cf-optimized',
-    name: 'Cloudflare优选线路',
-    url: 'https://youxuan.cf.090227.xyz', // Cloudflare优选域名
-    enabled: true,
-    priority: 2,
-  },
-  {
     id: 'hk-server',
     name: '香港服务器线路',
     url: 'https://your-hk-server.com', // 用户需要配置香港服务器地址
     enabled: false, // 默认禁用，用户配置后启用
-    priority: 3,
+    priority: 2,
   },
 ];
 
@@ -56,15 +49,6 @@ export function getRoutes(): Route[] {
     if (hkRoute) {
       hkRoute.url = hkServerUrl;
       hkRoute.enabled = true;
-    }
-  }
-  
-  // 从环境变量读取Cloudflare优选线路配置
-  const cfOptimizedUrl = import.meta.env.PUBLIC_CF_OPTIMIZED_URL;
-  if (cfOptimizedUrl) {
-    const cfRoute = routes.find(route => route.id === 'cf-optimized');
-    if (cfRoute) {
-      cfRoute.url = cfOptimizedUrl;
     }
   }
   

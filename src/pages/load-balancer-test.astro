@@ -8,7 +8,7 @@ import Layout from '../layouts/Layout.astro';
     <header class="mb-8">
       <h1 class="text-3xl font-bold mb-2">负载均衡器测试</h1>
       <p class="text-gray-600 dark:text-gray-400">
-        本页面展示负载均衡器系统的实时状态，包括三条线路的测速结果和当前选择的线路。
+        本页面展示负载均衡器系统的实时状态，包括两条线路的测速结果和当前选择的线路。
       </p>
     </header>
 
@@ -24,10 +24,9 @@ import Layout from '../layouts/Layout.astro';
         <h2 class="text-xl font-bold mb-4">使用说明</h2>
         <div class="space-y-4">
           <div>
-            <h3 class="font-semibold mb-2">三条线路</h3>
+            <h3 class="font-semibold mb-2">两条线路</h3>
             <ul class="list-disc pl-5 space-y-1 text-sm">
               <li><span class="font-medium">Cloudflare默认线路</span>：自动检测</li>
-              <li><span class="font-medium">Cloudflare优选线路</span>：youxuan.cf.090227.xyz</li>
               <li><span class="font-medium">香港服务器线路</span>：需配置环境变量</li>
             </ul>
           </div>
@@ -36,8 +35,7 @@ import Layout from '../layouts/Layout.astro';
             <h3 class="font-semibold mb-2">配置方法</h3>
             <p class="text-sm mb-2">在 <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">.env</code> 文件中添加：</p>
             <pre class="bg-gray-100 dark:bg-gray-700 p-3 rounded text-xs overflow-x-auto">
-PUBLIC_HK_SERVER_URL=https://your-hk-server.com
-PUBLIC_CF_OPTIMIZED_URL=https://youxuan.cf.090227.xyz</pre>
+PUBLIC_HK_SERVER_URL=https://your-hk-server.com</pre>
           </div>
           
           <div>

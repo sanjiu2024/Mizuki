@@ -2,12 +2,11 @@
 
 ## 概述
 
-本负载均衡器系统允许您的网站在三条线路之间自动选择最快线路：
+本负载均衡器系统允许您的网站在两条线路之间自动选择最快线路：
 1. **Cloudflare默认线路** - 您的网站当前使用的Cloudflare CDN
-2. **Cloudflare优选线路** - 使用优选IP的Cloudflare线路
-3. **香港服务器线路** - 自建香港服务器线路
+2. **香港服务器线路** - 自建香港服务器线路
 
-每次访问网站时，系统会自动测试三条线路的延迟，并选择最快的线路提供服务。
+每次访问网站时，系统会自动测试两条线路的延迟，并选择最快的线路提供服务。
 
 ## 快速开始
 
@@ -20,9 +19,6 @@
 # 示例：https://www.hscraft.online:10222 （使用非标准HTTPS端口10222）
 # 注意：香港服务器HTTP端口为10115，HTTPS端口为10222
 PUBLIC_HK_SERVER_URL=https://www.hscraft.online:10222
-
-# Cloudflare优选线路URL（可选，默认使用提供的优选域名）
-PUBLIC_CF_OPTIMIZED_URL=https://youxuan.cf.090227.xyz
 
 # 测速端点（可选，默认使用/favicon.ico）
 PUBLIC_SPEED_TEST_ENDPOINT=/favicon.ico
@@ -631,7 +627,7 @@ localStorage.getItem('load-balancer-cache')
 
 ### v1.0.0 (2024-01-01)
 - 初始版本发布
-- 支持三条线路负载均衡
+- 支持两条线路负载均衡
 - 自动测速和线路选择
 - 本地缓存支持
 - 香港服务器配置指南

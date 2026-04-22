@@ -35,12 +35,12 @@ const getRouteStatus = (routeId: string) => {
 };
 ---
 
-<Layout title="线路测速" description="测试三条线路延迟并自动选择最优线路">
+<Layout title="线路测速" description="测试两条线路延迟并自动选择最优线路">
   <div class="container mx-auto px-4 py-8">
     <header class="mb-8 text-center">
       <h1 class="text-3xl font-bold mb-2">线路测速与选择</h1>
       <p class="text-gray-600 dark:text-gray-400">
-        本页面自动测试三条线路的延迟，并为您选择最优线路。
+        本页面自动测试两条线路的延迟，并为您选择最优线路。
         测速完成后，您可以选择使用最优线路或手动选择其他线路。
       </p>
     </header>
@@ -168,10 +168,6 @@ const getRouteStatus = (routeId: string) => {
             <li class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">香港服务器:</span>
               <span class="font-medium">www.hscraft.online:10222 (HTTPS)</span>
-            </li>
-            <li class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">Cloudflare优选:</span>
-              <span class="font-medium">youxuan.cf.090227.xyz</span>
             </li>
             <li class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">测速端点:</span>
