@@ -23,6 +23,7 @@ import { pluginCustomCopyButton } from "./src/plugins/expressive-code/custom-cop
 import { pluginLanguageBadge } from "./src/plugins/expressive-code/language-badge.ts";
 import { AdmonitionComponent } from "./src/plugins/rehype-component-admonition.mjs";
 import { GithubCardComponent } from "./src/plugins/rehype-component-github-card.mjs";
+import { Pan123FileComponent, Pan123LinkComponent } from "./src/plugins/rehype-component-pan123.mjs";
 import { rehypeImageWidth } from "./src/plugins/rehype-image-width.mjs";
 import { rehypeMermaid } from "./src/plugins/rehype-mermaid.mjs";
 import { rehypeWrapTable } from "./src/plugins/rehype-wrap-table.mjs";
@@ -149,6 +150,9 @@ export default defineConfig({
 				{
 					components: {
 						github: GithubCardComponent,
+						"pan123": Pan123FileComponent,
+						"pan123-file": Pan123FileComponent,
+						"pan123-link": Pan123LinkComponent,
 						note: (x, y) => AdmonitionComponent(x, y, "note"),
 						tip: (x, y) => AdmonitionComponent(x, y, "tip"),
 						important: (x, y) =>

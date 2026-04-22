@@ -1,0 +1,17 @@
+name = "mizuki"
+main = "src/pages/api/_entry.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+# KV命名空间配置（可选）
+[[kv_namespaces]]
+binding = "PAN123_CACHE"
+id = "pan123_cache"
+preview_id = "pan123_cache"
+
+# 部署到Cloudflare Pages
+[pages]
+bucket = "./dist"

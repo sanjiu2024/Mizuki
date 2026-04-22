@@ -17,6 +17,7 @@ pnpm-debug.log*
 
 # environment variables
 .env
+.env.example
 .env.production
 
 # content repository (independent mode)

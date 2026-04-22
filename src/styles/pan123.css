@@ -1,0 +1,286 @@
+/* 123网盘文件组件样式 */
+
+/* 文件卡片组件 */
+.card-pan123 {
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  background: var(--card-bg, #ffffff);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-pan123.pan123-loading {
+  opacity: 0.8;
+}
+
+.card-pan123.pan123-loaded {
+  border-color: var(--primary-color, #3b82f6);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.card-pan123.pan123-error {
+  border-color: var(--error-color, #ef4444);
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+/* 卡片头部 */
+.pan123-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.pan123-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, var(--primary-color, #3b82f6), #60a5fa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pan123-icon .iconify {
+  font-size: 1.25rem;
+  color: white;
+}
+
+.pan123-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.pan123-filename {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary, #111827);
+  margin-bottom: 0.25rem;
+  word-break: break-all;
+}
+
+.pan123-filepath {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  font-family: 'JetBrains Mono Variable', monospace;
+  word-break: break-all;
+  opacity: 0.8;
+}
+
+/* 文件信息 */
+.pan123-fileinfo {
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 0.5rem;
+  padding: 0.875rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--border-light, #f3f4f6);
+}
+
+.pan123-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.pan123-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.pan123-info-label {
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+  min-width: 4rem;
+}
+
+.pan123-filesize,
+.pan123-modified {
+  color: var(--text-primary, #111827);
+  font-family: 'JetBrains Mono Variable', monospace;
+}
+
+/* 下载按钮 */
+.pan123-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pan123-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, var(--primary-color, #3b82f6), #60a5fa);
+  color: white;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.pan123-download-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  text-decoration: none;
+}
+
+.pan123-download-btn:active {
+  transform: translateY(0);
+}
+
+.pan123-download-btn .iconify {
+  font-size: 1.125rem;
+}
+
+.pan123-btn-text {
+  margin-left: 0.25rem;
+}
+
+/* 内联链接样式 */
+.pan123-link-wrapper {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pan123-inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--primary-color, #3b82f6);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  background: rgba(59, 130, 246, 0.1);
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.pan123-inline-link:hover {
+  background: rgba(59, 130, 246, 0.2);
+  text-decoration: none;
+  border-color: var(--primary-color, #3b82f6);
+}
+
+.pan123-inline-link .iconify {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.pan123-link-text {
+  font-size: 0.875rem;
+}
+
+.pan123-link-size {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-left: 0.25rem;
+  font-family: 'JetBrains Mono Variable', monospace;
+}
+
+.pan123-link-error {
+  color: var(--error-color, #ef4444);
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+/* 暗色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .card-pan123 {
+    background: var(--card-bg-dark, #1f2937);
+    border-color: var(--border-color-dark, #374151);
+  }
+  
+  .pan123-filename {
+    color: var(--text-primary-dark, #f9fafb);
+  }
+  
+  .pan123-filepath {
+    color: var(--text-secondary-dark, #9ca3af);
+  }
+  
+  .pan123-fileinfo {
+    background: var(--bg-secondary-dark, #111827);
+    border-color: var(--border-light-dark, #374151);
+  }
+  
+  .pan123-info-label {
+    color: var(--text-secondary-dark, #9ca3af);
+  }
+  
+  .pan123-filesize,
+  .pan123-modified {
+    color: var(--text-primary-dark, #f9fafb);
+  }
+  
+  .pan123-inline-link {
+    background: rgba(59, 130, 246, 0.15);
+    color: #93c5fd;
+  }
+  
+  .pan123-inline-link:hover {
+    background: rgba(59, 130, 246, 0.25);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 640px) {
+  .card-pan123 {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .pan123-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .pan123-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+  }
+  
+  .pan123-icon .iconify {
+    font-size: 1rem;
+  }
+  
+  .pan123-filename {
+    font-size: 1rem;
+  }
+  
+  .pan123-filepath {
+    font-size: 0.75rem;
+  }
+  
+  .pan123-info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .pan123-info-label {
+    min-width: auto;
+  }
+  
+  .pan123-download-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .pan123-inline-link {
+    padding: 0.125rem 0.375rem;
+    font-size: 0.8125rem;
+  }
+}
