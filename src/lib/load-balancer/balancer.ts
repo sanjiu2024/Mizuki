@@ -55,25 +55,37 @@ export class LoadBalancer {
    */
   async runSpeedTest(): Promise<void> {
     console.log('开始线路测速...');
+    console.log(`测速线路数量: ${this.routes.length}`);
+    this.routes.forEach((route, i) => {
+      console.log(`线路${i + 1}: ${route.name} (${route.id}) - ${route.url}`);
+    });
     
-    this.testResults = await testAllRoutes(this.routes);
-    this.lastTestTime = Date.now();
-    
-    // 更新线路统计数据
-    this.routes = updateAllRouteStats(this.routes, this.testResults);
-    
-    // 选择最快线路
-    this.selectedRoute = selectFastestRoute(this.routes, this.testResults);
-    
-    // 如果没有成功线路，使用备用线路
-    if (!this.selectedRoute && this.config.fallbackRouteId) {
-      this.selectedRoute = this.routes.find(route => route.id === this.config.fallbackRouteId) || null;
+    try {
+      this.testResults = await testAllRoutes(this.routes);
+      this.lastTestTime = Date.now();
+      
+      console.log(`测速完成，结果数量: ${this.testResults.length}`);
+      
+      // 更新线路统计数据
+      this.routes = updateAllRouteStats(this.routes, this.testResults);
+      
+      // 选择最快线路
+      this.selectedRoute = selectFastestRoute(this.routes, this.testResults);
+      
+      // 如果没有成功线路，使用备用线路
+      if (!this.selectedRoute && this.config.fallbackRouteId) {
+        this.selectedRoute = this.routes.find(route => route.id === this.config.fallbackRouteId) || null;
+        console.log(`没有成功线路，使用备用线路: ${this.config.fallbackRouteId}`);
+      }
+      
+      // 保存到缓存
+      this.saveToCache();
+      
+      this.logTestResults();
+    } catch (error) {
+      console.error('测速过程中发生错误:', error);
+      throw error;
     }
-    
-    // 保存到缓存
-    this.saveToCache();
-    
-    this.logTestResults();
   }
   
   /**

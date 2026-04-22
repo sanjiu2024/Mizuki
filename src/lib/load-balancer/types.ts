@@ -20,6 +20,8 @@ export interface SpeedTestResult {
   success: boolean;
   timestamp: number;
   error?: string;
+  statusCode?: number;
+  note?: string;
 }
 
 export interface LoadBalancerConfig {
