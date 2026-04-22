@@ -13,7 +13,7 @@
 		"update-anime": "node scripts/update-anime.mjs",
 		"update-bangumi": "node scripts/update-bangumi.mjs",
 		"update-bilibili": "node scripts/update-bilibili.mjs",
-		"build": "node scripts/update-anime.mjs && astro build && node -e \"if (process.env.CF_PAGES !== '1') require('child_process').spawnSync('pagefind', ['--site', 'dist'], { stdio: 'inherit', shell: true })\" && node scripts/compress-fonts.js",
+		"build": "node scripts/update-anime.mjs && astro build && node -e \"if (process.env.CF_PAGES !== '1') require('child_process').spawnSync('pagefind', ['--site', 'dist'], { stdio: 'inherit', shell: true })\" && node scripts/compress-fonts.js && node -e \"if (process.env.CF_PAGES === '1') { const fs = require('fs'); const path = require('path'); const distRoot = path.join(process.cwd(), 'dist'); const distClient = path.join(distRoot, 'client'); if (!fs.existsSync(distClient)) { fs.mkdirSync(distClient, { recursive: true }); } const items = fs.readdirSync(distRoot, { withFileTypes: true }); for (const item of items) { if (item.name === 'client') continue; const src = path.join(distRoot, item.name); const dest = path.join(distClient, item.name); if (item.isDirectory()) { copyDir(src, dest); } else { fs.copyFileSync(src, dest); } } function copyDir(src, dest) { if (!fs.existsSync(dest)) { fs.mkdirSync(dest, { recursive: true }); } const items = fs.readdirSync(src, { withFileTypes: true }); for (const item of items) { const srcPath = path.join(src, item.name); const destPath = path.join(dest, item.name); if (item.isDirectory()) { copyDir(srcPath, destPath); } else { fs.copyFileSync(srcPath, destPath); } } } }\"",
 		"submit": "node scripts/indexnow-submit.js",
 		"preview": "astro preview",
 		"astro": "astro",
@@ -26,7 +26,6 @@
 	},
 	"dependencies": {
 		"@astrojs/check": "^0.9.8",
-		"@astrojs/cloudflare": "^13.2.0",
 		"@astrojs/mdx": "^5.0.3",
 		"@astrojs/rss": "^4.0.18",
 		"@astrojs/sitemap": "^3.7.2",
