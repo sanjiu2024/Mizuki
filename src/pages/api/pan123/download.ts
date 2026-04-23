@@ -31,19 +31,41 @@ async function incrementDownloadCount(filePath: string): Promise<void> {
 }
 
 /**
+ * 手动解析URL查询参数（解决Astro查询参数丢失问题）
+ */
+function parseQueryParams(urlString: string): URLSearchParams {
+  try {
+    const url = new URL(urlString);
+    return url.searchParams;
+  } catch (error) {
+    console.warn('[PAN123-DOWNLOAD] URL解析失败，尝试手动解析:', error);
+    const queryStart = urlString.indexOf('?');
+    if (queryStart === -1) {
+      return new URLSearchParams();
+    }
+    const queryString = urlString.substring(queryStart + 1);
+    return new URLSearchParams(queryString);
+  }
+}
+
+/**
  * 从请求中提取文件路径（混合方案）
  * 支持多种方式：
  * 1. GET/HEAD查询参数
  * 2. URL路径参数（备用方案）
  */
 function extractFilePath(request: Request, url: URL): string | null {
+  const urlString = url.toString();
   console.log('[PAN123-DOWNLOAD] 请求方法:', request.method);
-  console.log('[PAN123-DOWNLOAD] 请求URL:', url.toString());
-  console.log('[PAN123-DOWNLOAD] 查询参数:', Object.fromEntries(url.searchParams.entries()));
+  console.log('[PAN123-DOWNLOAD] 请求URL:', urlString);
+  
+  // 手动解析查询参数（解决Astro bug）
+  const searchParams = parseQueryParams(urlString);
+  console.log('[PAN123-DOWNLOAD] 手动解析的查询参数:', Object.fromEntries(searchParams.entries()));
   
   // 方法1：尝试从查询参数获取（GET/HEAD请求）
   if (request.method === 'GET' || request.method === 'HEAD') {
-    const queryPath = url.searchParams.get('path');
+    const queryPath = searchParams.get('path');
     if (queryPath) {
       console.log('[PAN123-DOWNLOAD] 从查询参数获取路径:', queryPath);
       return queryPath;
